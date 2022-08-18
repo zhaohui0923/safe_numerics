@@ -33,6 +33,8 @@ set(run_examples_list
 foreach(test_name ${run_examples_list})
   test_run_pass(${test_name})
   set_target_properties(${test_name} PROPERTIES FOLDER "run test examples")
+  # 为了能够本地局部编译而添加的本库自身的包含路径
+  target_include_directories(${test_name} PRIVATE D:/safe_numerics/include)
 endforeach(test_name)
 
 test_compile_fail(example17)

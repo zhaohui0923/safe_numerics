@@ -59,7 +59,10 @@ if( CMAKE_CXX_COMPILER_ID STREQUAL "GNU" )
   add_compile_options( -ftemplate-depth=255 )
 elseif( CMAKE_CXX_COMPILER_ID STREQUAL "MSVC" )
   # warning level 4 and all warnings as errors
-  add_compile_options(/W4 /WX /wd4996 /wd4068)
+  # 为了避免“C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失”的错误
+  # 屏蔽掉将警告视为错误的编译选项
+  # add_compile_options(/W4 /WX /wd4996 /wd4068)
+  add_compile_options(/W4 /wd4996 /wd4068)
 elseif( CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang" )
   add_compile_options(-Wnon-virtual-dtor -ansi -Wcast-align -Wchar-subscripts -Wall -Wextra -W -Wshadow -Wsign-compare )
   add_compile_options( -ftemplate-depth=255 )
