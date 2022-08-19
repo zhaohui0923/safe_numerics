@@ -376,12 +376,14 @@ using legal_overload =
 /////////////////////////////////////////////////////////////////
 // addition
 
+// 加法运算
 template <class T, class U>
 struct addition_result {
  private:
   // 融合的类型提升策略
   using promotion_policy = typename common_promotion_policy<T, U>::type;
-  // 结果类型
+  // 二元加法结果的底层基类型
+  // 类型的推导是通过promotion_policy来进行的
   using result_base_type =
       typename promotion_policy::template addition_result<T, U>::type;
 
@@ -397,7 +399,8 @@ struct addition_result {
   // 融合的异常策略
   using exception_policy = typename common_exception_policy<T, U>::type;
 
-  // 结果类型
+  // 检查结果<结果底层基类型>
+  // 结果底层基类型由promotion_policy来决定
   using r_type = checked_result<result_base_type>;
 
   // 当可能发生异常时的加法结果
@@ -417,16 +420,20 @@ struct addition_result {
   using r_type_interval_t = interval<r_type>;
 
   constexpr static const r_type_interval_t get_r_type_interval() {
+    // 左操作数的范围区间(已合法的转换为结果底层基类型)
     constexpr const r_type_interval_t t_interval{
         checked::cast<result_base_type>(
             base_value(std::numeric_limits<T>::min())),
         checked::cast<result_base_type>(
             base_value(std::numeric_limits<T>::max()))};
+
+    // 右操作数的范围区间(已合法的转换为结果底层基类型)
     constexpr const r_type_interval_t u_interval{
         checked::cast<result_base_type>(
             base_value(std::numeric_limits<U>::min())),
         checked::cast<result_base_type>(
             base_value(std::numeric_limits<U>::max()))};
+
     return t_interval + u_interval;
   }
   constexpr static const r_type_interval_t r_type_interval =
@@ -440,6 +447,7 @@ struct addition_result {
           ? std::numeric_limits<result_base_type>::max()
           : static_cast<result_base_type>(r_type_interval.u)};
 
+  // 判断该加法操作是否可能发生异常
   constexpr static bool exception_possible() {
     if (r_type_interval.l.exception()) return true;
     if (r_type_interval.u.exception()) return true;
@@ -451,9 +459,14 @@ struct addition_result {
   constexpr static auto ru = return_interval.u;
 
  public:
+  // 二元加法的结果类型
+  // 也是一个安全类型(safe_base)
   using type =
       safe_base<result_base_type, rl, ru, promotion_policy, exception_policy>;
 
+  // 二元加法的结果计算
+  // t: 加法的左操作数
+  // u: 加法的右操作数
   constexpr static type return_value(const T &t, const U &u) {
     return type(return_value(
                     t, u, std::integral_constant<bool, exception_possible()>()),
@@ -474,8 +487,6 @@ template <class T, class U>
 typename boost::lazy_enable_if_c<legal_overload<addition_operator, T, U>::value,
                                  addition_result<T, U> >::type /*constexpr inline为了动态跟踪学习屏蔽而注释掉*/
 operator+(const T &t, const U &u) {
-  throw std::exception("debug");
-  std::cout << "operator+(const T &t, const U &u) is called!" << std::endl;
   return addition_result<T, U>::return_value(t, u);
 }
 

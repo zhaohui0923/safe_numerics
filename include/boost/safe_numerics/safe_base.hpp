@@ -45,7 +45,14 @@ struct get_exception_policy<safe_base<T, Min, Max, P, E> > {
   using type = E;
 };
 
-template <class T, T Min, T Max, class P, class E>
+// 元函数用于获取基类型
+// 该模版非主模版，一般情况下基类型为其自身的类型
+// 该特化版本对为safe_base<...>, 基类型析出为其底层类型
+template <class T,  // 底层基础类型
+          T Min,    // 底层基础类型的合法范围最小值
+          T Max,    // 底层基础类型的合法范围最大值
+          class P,  // 类型提升策略
+          class E>  // 异常处理策略
 struct base_type<safe_base<T, Min, Max, P, E> > {
   using type = T;
 };
@@ -182,6 +189,7 @@ class safe_base {
   }
 
   // mutating unary operators
+  // 可变的一元操作符, 前缀自增
   constexpr safe_base &operator++() {  // pre increment
     return *this = *this + 1;
   }

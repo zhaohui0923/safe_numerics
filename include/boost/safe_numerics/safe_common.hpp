@@ -18,6 +18,9 @@ template<typename T>
 struct is_safe : public std::false_type
 {};
 
+// 元函数用于获取基类型
+// 该模版是主模版，一般情况下基类型为其自身的类型
+// 有特化版本对T为safe_base<...>, 基类型析出为其底层类型
 template<typename T>
 struct base_type {
     using type = T;

@@ -73,13 +73,23 @@ constexpr inline void display(
 //////////////////////////////////////////////////////////////////////////
 // implement C++ operators for check_result<T>
 
+// 加法结果值类型,取值为以下的几种情况
+// 1. 已知的值
+// 2. 小于最小值
+// 3. 大于最大值
+// 4. 不确定
 struct sum_value_type {
   // characterization of various values
   const enum flag {
+    // 已知的值
     known_value = 0,
+    // 小于最小值
     less_than_min,
+    // 大于最大值
     greater_than_max,
+    // 不确定
     indeterminate,
+    // 该值仅用作枚举值的卫兵
     count
   } m_flag;
   template <class T>
