@@ -29,6 +29,7 @@ int main(int, const char *[]) {
     // x的类型为boost::safe_numerics::safe_base<int8_t, (int8_t)(-128),
     // (int8_t)127, boost::safe_numerics::native,
     // boost::safe_numerics::default_exception_policy>
+    // 在为x赋值的时候就已经抛出异常了
     safe<std::int8_t> x = INT_MAX;
     safe<std::int8_t> y = 2;
     safe<std::int8_t> z;
