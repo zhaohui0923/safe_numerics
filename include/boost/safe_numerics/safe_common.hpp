@@ -13,6 +13,7 @@ namespace boost {
 namespace safe_numerics {
 
 // default implementations for required meta-functions
+// 元函数用于判断是否是安全数值类型(即safe_base)
 template<typename T>
 struct is_safe : public std::false_type
 {};
@@ -27,11 +28,15 @@ constexpr const typename base_type<T>::type & base_value(const T & t) {
     return static_cast<const typename base_type<T>::type & >(t);
 }
 
+// 获取类型T的类型提升策略
+// 默认的类型提升策略类型为void
 template<typename T>
 struct get_promotion_policy {
     using type = void;
 };
 
+// 获取类型T的异常处理策略
+// 默认的异常处理策略类型为void
 template<typename T>
 struct get_exception_policy {
     using type = void;

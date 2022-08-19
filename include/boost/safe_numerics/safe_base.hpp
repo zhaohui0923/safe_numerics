@@ -30,9 +30,11 @@ template <class Stored, Stored Min, Stored Max,
           >
 class safe_base;
 
+// 元函数用于判断是否是安全数值类型(即safe_base)
 template <class T, T Min, T Max, class P, class E>
 struct is_safe<safe_base<T, Min, Max, P, E> > : public std::true_type {};
 
+// 获取类型提升策略
 template <class T, T Min, T Max, class P, class E>
 struct get_promotion_policy<safe_base<T, Min, Max, P, E> > {
   using type = P;
@@ -88,6 +90,13 @@ class safe_base {
   // 底层存储的值
   Stored m_t;
 
+  // validate input value to ensure that it can be safely cast to the result
+  //  type
+  // Stored: 底层存储类型
+  // Min: 底层存储类型的最小值
+  // Max: 底层存储类型的最大值
+  // P: Promotion Policy
+  // E: Exception Policy
   template <class T>
   constexpr Stored validated_cast(const T &t) const;
 

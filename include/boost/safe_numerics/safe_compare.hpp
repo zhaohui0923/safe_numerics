@@ -19,8 +19,11 @@ namespace safe_compare {
 namespace safe_compare_detail {
     template<typename T>
     using make_unsigned = typename std::conditional<
-        std::is_signed<T>::value,
+        // 判断T是否为有符号类型
+        std::is_signed<T>::value,  
+        // 当T为有符号类型时，利用标准库的make_unsigned将T转换为无符号类型
         std::make_unsigned<T>,
+        // 当T为无符号时，无需进行类型转换
         T
     >::type;
 
@@ -29,6 +32,7 @@ namespace safe_compare_detail {
     struct less_than {
         template<class T, class U>
         constexpr static bool invoke(const T & t, const U & u){
+            // 两个操作数符号相同，直接比较
             return t < u;
         }
     };
@@ -67,6 +71,25 @@ namespace safe_compare_detail {
     };
 } // safe_compare_detail
 
+// # Description
+// Compare two primitive integers. These functions will return a correct result
+// regardless of the type of the operands. Specifically it is guaranteed to
+// return the correct arithmetic result when comparing signed and unsigned types
+// of any size. It does not follow the standard C/C++ procedure of converting
+// the operands to some common type then doing the compare. So it is not
+// equivalent to the C/C++ binary operations <, >, >=, <=, ==, != and shouldn't
+// be used by user programs which should be portable to standard C/C++ integer
+// arithmetic. The functions are free functions defined inside the namespace
+// boost::numeric::safe_compare.
+//
+// # Type requirements
+// All template parameters of the functions must be C/C++ built-in integer
+// types, char, int ....
+//
+// # Complexity
+// Each function performs one and only one arithmetic operation.
+// 
+// lhs和rhs都是整型数的情况
 template<class T, class U>
 typename std::enable_if<
     std::is_integral<T>::value && std::is_integral<U>::value,

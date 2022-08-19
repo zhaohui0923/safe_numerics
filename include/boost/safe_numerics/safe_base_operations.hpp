@@ -40,30 +40,52 @@ namespace safe_numerics {
 
 namespace dispatch_switch {
 
+// EP: Exception Policy
+// safe_numeric_actions: 动作码
+// 出错时执行相应的动作
 template <class EP, safe_numerics_actions>
 struct dispatch_case {};
 
+// EP: Exception Policy
+// 在动作码为未初始化值时执行相应的动作
 template <class EP>
 struct dispatch_case<EP, safe_numerics_actions::uninitialized_value> {
+  // e: 错误码
+  // msg: 错误信息
   constexpr static void invoke(const safe_numerics_error &e, const char *msg) {
     EP::on_uninitialized_value(e, msg);
   }
 };
+
+// EP: Exception Policy
+// 在动作码为算术错误时执行相应的动作
 template <class EP>
 struct dispatch_case<EP, safe_numerics_actions::arithmetic_error> {
+  // e: 错误码
+  // msg: 错误信息
   constexpr static void invoke(const safe_numerics_error &e, const char *msg) {
     EP::on_arithmetic_error(e, msg);
   }
 };
+
+// EP: Exception Policy
+// 在动作码为实现定义行为时执行相应的动作
 template <class EP>
 struct dispatch_case<EP,
                      safe_numerics_actions::implementation_defined_behavior> {
+  // e: 错误码
+  // msg: 错误信息
   constexpr static void invoke(const safe_numerics_error &e, const char *msg) {
     EP::on_implementation_defined_behavior(e, msg);
   }
 };
+
+// EP: Exception Policy 
+// 在动作码为未定义行为时执行相应的动作
 template <class EP>
 struct dispatch_case<EP, safe_numerics_actions::undefined_behavior> {
+  // e: 错误码
+  // msg: 错误信息
   constexpr static void invoke(const safe_numerics_error &e, const char *msg) {
     EP::on_undefined_behavior(e, msg);
   }
@@ -71,18 +93,25 @@ struct dispatch_case<EP, safe_numerics_actions::undefined_behavior> {
 
 }  // namespace dispatch_switch
 
+// EP: Exception Policy
+// E: 错误枚举值
 template <class EP, safe_numerics_error E>
 constexpr inline void dispatch(const char *msg) {
+  // 将错误码转换为动作码
   constexpr safe_numerics_actions a = make_safe_numerics_action(E);
   dispatch_switch::dispatch_case<EP, a>::invoke(E, msg);
 }
 
+// EP: Exception Policy
+// R: Result type
 template <class EP, class R>
 class dispatch_and_return {
  public:
   template <safe_numerics_error E>
   constexpr static checked_result<R> invoke(char const *const &msg) {
+    // 分派错误(将错误码转换为动作码并调用Exception Policy的相应动作)
     dispatch<EP, E>(msg);
+    // 返回错误信息
     return checked_result<R>(E, msg);
   }
 };
@@ -96,8 +125,10 @@ class dispatch_and_return {
 // E: Exception Policy
 template <typename R, R Min, R Max, typename E>
 struct validate_detail {
+  // 包含结果值和错误信息的类型
   using r_type = checked_result<R>;
 
+  // 转换时可能出现异常时获取转换后的值
   struct exception_possible {
     template <typename T>
     constexpr static R return_value(const T &t) {
@@ -110,6 +141,8 @@ struct validate_detail {
       return rx;
     }
   };
+
+  // 转换时不可能出现异常时直接获取转换后的值
   struct exception_not_possible {
     template <typename T>
     constexpr static R return_value(const T &t) {
@@ -121,11 +154,15 @@ struct validate_detail {
   // type R: 返回类型 T: 输入类型 t: 输入值
   template <typename T>
   constexpr static R return_value(const T &t) {
+    // 源类型的范围
     constexpr const interval<r_type> t_interval{
         checked::cast<R>(base_value(std::numeric_limits<T>::min())),
         checked::cast<R>(base_value(std::numeric_limits<T>::max()))};
+    // 目标类型的范围
     constexpr const interval<r_type> r_interval{r_type(Min), r_type(Max)};
 
+    // 静态断言检查
+    // 源类型和目标范围无交集时失败
     static_assert(true != static_cast<bool>(r_interval.excludes(t_interval)),
                   "can't cast from ranges that don't overlap");
     return std::conditional<static_cast<bool>(r_interval.includes(t_interval)),
@@ -219,23 +256,32 @@ constexpr inline safe_base<Stored, Min, Max, P, E>::operator R() const {
 /////////////////////////////////////////////////////////////////
 // binary operators
 
+// 公共异常策略
 template <class T, class U>
 struct common_exception_policy {
+  // 使用静态断言验证两个类型至少有一个是安全类型(safe_base)
   static_assert(is_safe<T>::value || is_safe<U>::value,
                 "at least one type must be a safe type");
 
+  // t的异常策略
   using t_exception_policy = typename get_exception_policy<T>::type;
+  // u的异常策略
   using u_exception_policy = typename get_exception_policy<U>::type;
 
+  // 使用静态断言验证两个类型的异常策略如果不同，那么其中一个必定为void
   static_assert(std::is_same<t_exception_policy, u_exception_policy>::value ||
                     std::is_same<t_exception_policy, void>::value ||
                     std::is_same<void, u_exception_policy>::value,
                 "if the exception policies are different, one must be void!");
 
+  // 使用静态断言验证至少有一个类型的异常策略不是void
   static_assert(!(std::is_same<t_exception_policy, void>::value &&
                   std::is_same<void, u_exception_policy>::value),
                 "at least one exception policy must not be void");
 
+  // 融合的异常策略
+  // 优先使用u的异常策略，如果u的异常策略为void，则使用t的异常策略
+  // 若t的异常策略为void，则为void
   using type = typename std::conditional<
       !std::is_same<void, u_exception_policy>::value, u_exception_policy,
       typename std::conditional<!std::is_same<void, t_exception_policy>::value,
@@ -243,23 +289,36 @@ struct common_exception_policy {
                                 //
                                 void>::type>::type;
 
+  // 使用静态断言验证融合后的异常策略不是void
   static_assert(!std::is_same<void, type>::value, "exception_policy is void");
 };
 
+// 公共类型提升策略
+// T: 第一个操作数的类型
+// U: 第二个操作数的类型
 template <class T, class U>
 struct common_promotion_policy {
+  // 使用静态断言确保T和U两个操作数类型至少有一个是安全类型(safe_base)
   static_assert(is_safe<T>::value || is_safe<U>::value,
                 "at least one type must be a safe type");
+  // T操作数的类型提升策略
   using t_promotion_policy = typename get_promotion_policy<T>::type;
+  // U操作数的类型提升策略
   using u_promotion_policy = typename get_promotion_policy<U>::type;
+  // 使用静态断言验证两个类型的类型提升策略相同或者其中一个是void
   static_assert(std::is_same<t_promotion_policy, u_promotion_policy>::value ||
                     std::is_same<t_promotion_policy, void>::value ||
                     std::is_same<void, u_promotion_policy>::value,
                 "if the promotion policies are different, one must be void!");
+  // 使用静态断言验证两个类型的类型提升策略不是均为void
   static_assert(!(std::is_same<t_promotion_policy, void>::value &&
                   std::is_same<void, u_promotion_policy>::value),
                 "at least one promotion policy must not be void");
 
+  // 融合的类型提升策略(优先级从高到低单取)
+  // u的类型提升策略非空时就取u的类型提升策略
+  // t的类型提升策略非空时就取t的类型提升策略
+  // 取void为最后的类型提升策略
   using type = typename std::conditional<
       !std::is_same<void, u_promotion_policy>::value, u_promotion_policy,
       typename std::conditional<!std::is_same<void, t_promotion_policy>::value,
@@ -267,6 +326,7 @@ struct common_promotion_policy {
                                 //
                                 void>::type>::type;
 
+  // 静态断言验证融合后的类型提升策略不是void
   static_assert(!std::is_same<void, type>::value, "promotion_policy is void");
 };
 
@@ -278,6 +338,7 @@ struct common_promotion_policy {
 // helper - cast arguments to binary operators to a specified
 // result type
 
+// 将t和u转型为R, 通过pair返回两个转换后的结果
 template <class EP, class R, class T, class U>
 constexpr inline static std::pair<R, R> casting_helper(const T &t, const U &u) {
   using r_type = checked_result<R>;
@@ -298,6 +359,13 @@ constexpr inline static std::pair<R, R> casting_helper(const T &t, const U &u) {
 // Note: the following global operators will be found via
 // argument dependent lookup.
 namespace {
+// F: 操作类型
+// T: 操作数1的类型
+// U: 操作数2的类型
+// 备注:
+// 两个操作的类型至少有一个是安全类型(safe_base)
+// 且
+// F<T,U>是合法的
 template <template <class...> class F, class T, class U>
 using legal_overload =
     boost::mp11::mp_and<boost::mp11::mp_or<is_safe<T>, is_safe<U> >,
@@ -311,11 +379,14 @@ using legal_overload =
 template <class T, class U>
 struct addition_result {
  private:
+  // 融合的类型提升策略
   using promotion_policy = typename common_promotion_policy<T, U>::type;
+  // 结果类型
   using result_base_type =
       typename promotion_policy::template addition_result<T, U>::type;
 
   // if exception not possible
+  // 当不可能发生异常时可以直接相加
   constexpr static result_base_type return_value(const T &t, const U &u,
                                                  std::false_type) {
     return static_cast<result_base_type>(base_value(t)) +
@@ -323,10 +394,13 @@ struct addition_result {
   }
 
   // if exception possible
+  // 融合的异常策略
   using exception_policy = typename common_exception_policy<T, U>::type;
 
+  // 结果类型
   using r_type = checked_result<result_base_type>;
 
+  // 当可能发生异常时的加法结果
   constexpr static result_base_type return_value(const T &t, const U &u,
                                                  std::true_type) {
     const std::pair<result_base_type, result_base_type> r =
@@ -387,14 +461,21 @@ struct addition_result {
   }
 };
 
+// 如果该类型定义合法，那么意味着T类型和U类型可以进行加法操作
 template <class T, class U>
 using addition_operator =
     decltype(std::declval<T const &>() + std::declval<U const &>());
 
+// 加法操作
+// 该函数仅当
+// 1. 两个操作数至少有一个是安全类型(safe_base)
+// 2. 可以进行加法操作
 template <class T, class U>
 typename boost::lazy_enable_if_c<legal_overload<addition_operator, T, U>::value,
-                                 addition_result<T, U> >::type constexpr inline
+                                 addition_result<T, U> >::type /*constexpr inline为了动态跟踪学习屏蔽而注释掉*/
 operator+(const T &t, const U &u) {
+  throw std::exception("debug");
+  std::cout << "operator+(const T &t, const U &u) is called!" << std::endl;
   return addition_result<T, U>::return_value(t, u);
 }
 

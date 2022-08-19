@@ -33,6 +33,7 @@ using bool_type = typename std::conditional<tf, std::true_type, std::false_type>
 // Note presumption of twos complement integer arithmetic
 
 // convert an integral value to some other integral type
+// 这是一个特化版本，用于将一个整数类型转换为另一个整数类型(溢出检查)
 template<
     typename R,
     R Min,
@@ -41,20 +42,22 @@ template<
     class F
 >
 struct heterogeneous_checked_operation<
-    R,
-    Min,
-    Max,
-    T,
+    R,      // 结果类型
+    Min,    // 结果类型的最小值
+    Max,    // 结果类型的最大值
+    T,      // 输入参数类型
     F,
     typename std::enable_if<
         std::is_integral<R>::value
         && std::is_integral<T>::value
-    >::type
+    >::type    // 该特化仅对R和T均为整数类型有效
 >{
     ////////////////////////////////////////////////////
     // safe casting on primitive types
 
     struct cast_impl_detail {
+        // 用于将一个整数类型转换为另一个整数类型(溢出检查)
+        // 源类型和目标类型均为有符号整数类型
         constexpr static checked_result<R>
         cast_impl(
             const T & t,
@@ -64,18 +67,24 @@ struct heterogeneous_checked_operation<
             // INT32-C Ensure that operations on signed
             // integers do not overflow
             return
+            // 检查是否有正溢出
             boost::safe_numerics::safe_compare::greater_than(t, Max) ?
                 F::template invoke<safe_numerics_error::positive_overflow_error>(
                     "converted signed value too large"
                 )
+            // 检查是否有负溢出
             : boost::safe_numerics::safe_compare::less_than(t, Min) ?
                 F::template invoke<safe_numerics_error::negative_overflow_error>(
                     "converted signed value too small"
                 )
             :
+                // 溢出检查通过, 返回转换后的值
                 checked_result<R>(static_cast<R>(t))
             ;
         }
+
+        // 用于将一个整数类型转换为另一个整数类型(溢出检查)
+        // 源类型有符号，目标类型无符号
         constexpr static checked_result<R>
         cast_impl(
             const T & t,
@@ -85,19 +94,25 @@ struct heterogeneous_checked_operation<
             // INT30-C Ensure that unsigned integer operations
             // do not wrap
             return
+            // 检查正溢出
             boost::safe_numerics::safe_compare::greater_than(t, Max) ?
                 F::template invoke<safe_numerics_error::positive_overflow_error>(
                     "converted unsigned value too large"
                 )
             :
+            // 检查负溢出
             boost::safe_numerics::safe_compare::less_than(t, Min) ?
                 F::template invoke<safe_numerics_error::positive_overflow_error>(
                     "converted unsigned value too small"
                 )
             :
+                // 溢出检查通过, 返回转换后的值
                 checked_result<R>(static_cast<R>(t))
             ;
         }
+
+        // 用于将一个整数类型转换为另一个整数类型(溢出检查)
+        // 源类型有无符号，目标类型无符号
         constexpr static checked_result<R>
         cast_impl(
             const T & t,
@@ -107,19 +122,25 @@ struct heterogeneous_checked_operation<
             // INT32-C Ensure that operations on unsigned
             // integers do not overflow
             return
+            // 判断是否超过目标类型的最大值
             boost::safe_numerics::safe_compare::greater_than(t, Max) ?
                 F::template invoke<safe_numerics_error::positive_overflow_error>(
                     "converted unsigned value too large"
                 )
             :
+            // 判断是否小于目标类型的最小值
             boost::safe_numerics::safe_compare::less_than(t, Min) ?
                 F::template invoke<safe_numerics_error::positive_overflow_error>(
                     "converted unsigned value too small"
                 )
             :
+                // 验证通过，返回转换后的值
                 checked_result<R>(static_cast<R>(t))
             ;
         }
+
+        // 用于将一个整数类型转换为另一个整数类型(溢出检查)
+        // 源类型有符号，目标类型无符号
         constexpr static checked_result<R>
         cast_impl(
             const T & t,
@@ -127,24 +148,31 @@ struct heterogeneous_checked_operation<
             std::true_type   // T is signed
         ){
             return
+            // 校验是否小于目标类型的最小值
             boost::safe_numerics::safe_compare::less_than(t, Min) ?
                 F::template invoke<safe_numerics_error::domain_error>(
                     "converted value to low or negative"
                 )
             :
+            // 校验是否大于目标类型的最大值
             boost::safe_numerics::safe_compare::greater_than(t, Max) ?
                 F::template invoke<safe_numerics_error::positive_overflow_error>(
                     "converted signed value too large"
                 )
             :
+                // 检查通过，返回转换后的值
                 checked_result<R>(static_cast<R>(t))
             ;
         }
     }; // cast_impl_detail
 
+    // 用于将一个整数类型转换为另一个整数类型(溢出检查)
     constexpr static checked_result<R>
     cast(const T & t){
         return
+            // 直接分派给cast_impl_detail的cast_impl函数
+            // 实际是根据源类型和目标类型的符号性来调用不同的重载版本
+            // 这种方式静态分派效率高而且符合单一职责原则
             cast_impl_detail::cast_impl(
                 t,
                 std::is_signed<R>(),

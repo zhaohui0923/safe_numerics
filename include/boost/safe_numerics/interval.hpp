@@ -138,6 +138,9 @@ constexpr inline interval<double>::interval()
     : l(std::numeric_limits<double>::lowest()),
       u(std::numeric_limits<double>::max()) {}
 
+// Expression: i + j
+// Return Type: interval<R>
+// add two intervals and return the result
 template <typename T>
 constexpr inline interval<T> operator+(const interval<T> &t,
                                        const interval<T> &u) {
@@ -145,6 +148,9 @@ constexpr inline interval<T> operator+(const interval<T> &t,
   return {t.l + u.l, t.u + u.u};
 }
 
+// Expression: i - j	
+// Return Type: interval<R>	
+// Semantic: subtract two intervals and return the result
 template <typename T>
 constexpr inline interval<T> operator-(const interval<T> &t,
                                        const interval<T> &u) {
@@ -152,6 +158,9 @@ constexpr inline interval<T> operator-(const interval<T> &t,
   return {t.l - u.u, t.u - u.l};
 }
 
+// Expression: i * j	
+// Return Type: interval<R>	
+// Semantics: multiply two intervals and return the result
 template <typename T>
 constexpr inline interval<T> operator*(const interval<T> &t,
                                        const interval<T> &u) {
@@ -220,6 +229,9 @@ constexpr inline boost::logic::tribool intersect(const interval<T> &t,
   return t.u >= u.l || t.l <= u.u;
 }
 
+// Expression: t < u	
+// ReturnType: boost::logic::tribool	
+// Semantics: true if every element in t is less than every element in u
 template <typename T>
 constexpr inline boost::logic::tribool operator<(const interval<T> &t,
                                                  const interval<T> &u) {
@@ -234,6 +246,9 @@ constexpr inline boost::logic::tribool operator<(const interval<T> &t,
           boost::logic::indeterminate;
 }
 
+// Expression: t > u	
+// ReturnType: boost::logic::tribool	
+// Semantics: true if every element in t is greater than every element in u
 template <typename T>
 constexpr inline boost::logic::tribool operator>(const interval<T> &t,
                                                  const interval<T> &u) {
@@ -248,23 +263,35 @@ constexpr inline boost::logic::tribool operator>(const interval<T> &t,
           boost::logic::indeterminate;
 }
 
+// Expression: t == u	
+// ReturnType: bool	
+// Semantics: true if limits are equal
 template <typename T>
 constexpr inline bool operator==(const interval<T> &t, const interval<T> &u) {
   // intervals have the same limits
   return t.l == u.l && t.u == u.u;
 }
 
+// Expression: t != u	
+// ReturnType: bool	
+// Semantics: true if limits are not equal
 template <typename T>
 constexpr inline bool operator!=(const interval<T> &t, const interval<T> &u) {
   return !(t == u);
 }
 
+// Expression: t <= u	
+// ReturnType: boost::logic::tribool	
+// Semantics: true if every element in t is less than or equal to every element in u
 template <typename T>
 constexpr inline boost::logic::tribool operator<=(const interval<T> &t,
                                                   const interval<T> &u) {
   return !(t > u);
 }
 
+// Expression: t >= u	
+// ReturnType: boost::logic::tribool	
+// Semantics: true if every element in t is greater than or equal to every element in u
 template <typename T>
 constexpr inline boost::logic::tribool operator>=(const interval<T> &t,
                                                   const interval<T> &u) {
@@ -278,12 +305,20 @@ constexpr inline boost::logic::tribool operator>=(const interval<T> &t,
 
 namespace std {
 
+// Expression: os << i	
+// ReturnType: os &	
+// Semantics: print interval to output stream
 template <typename CharT, typename Traits, typename T>
 inline std::basic_ostream<CharT, Traits> &operator<<(
     std::basic_ostream<CharT, Traits> &os,
     const boost::safe_numerics::interval<T> &i) {
   return os << '[' << i.l << ',' << i.u << ']';
 }
+
+// Expression: os << i	
+// ReturnType: os &	
+// Semantics: print interval to output stream
+// 对unsigned char类型进行特化, 依旧以数值形式输出
 template <typename CharT, typename Traits>
 inline std::basic_ostream<CharT, Traits> &operator<<(
     std::basic_ostream<CharT, Traits> &os,
@@ -292,6 +327,10 @@ inline std::basic_ostream<CharT, Traits> &operator<<(
   return os;
 }
 
+// Expression: os << i	
+// ReturnType: os &	
+// Semantics: print interval to output stream
+// 对signed char类型进行特化, 依旧以数值形式输出
 template <typename CharT, typename Traits>
 inline std::basic_ostream<CharT, Traits> &operator<<(
     std::basic_ostream<CharT, Traits> &os,

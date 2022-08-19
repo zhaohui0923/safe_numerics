@@ -14,31 +14,80 @@
 namespace boost {
 namespace safe_numerics {
 
+// # Description
+// Create a valid exception policy from 4 function objects. This specifies the
+// actions to be taken for different types of invalid results.
+//
+// # Notation
+// - e	instance of a the type safe_numerics_error
+// - message	pointer to const char * error message
+//
+// # Model of
+// ExceptionPolicy
+//
+// # Inherited Valid Expressions
+// This class implements all the valid operations from the type requirements
+// ExceptionPolicy. Aside from these, there are no other operations implemented.
+//
+// # Valid Expressions
+// Whenever an operation yield an invalid result, one of the following functions
+// will be invoked.
 template<
+    // Function object callable with the expression AE()(e, message)
+    // The operation cannot produce valid arithmetic result such as overflows, divide by zero, etc.
     typename AE,
+    // Function object callable with the expression IDB()(e,
+    // The result depends upon implementation defined behavior according to the C++ standard
     typename IDB,
+    // Function object callable with the expression UB()(e, message)
+    // The result is undefined by the C++ standard
     typename UB,
+    // Function object callable with the expression UV()(e, message)
+    // A variable is not initialized
     typename UV
 >
 struct exception_policy {
-    constexpr static void on_arithmetic_error(
-        const safe_numerics_error & e,
-        const char * msg
-    ){
+    // # Expression
+    // EP::on_arithmetic_error(e, message)
+    //
+    // # Invoke When
+    // The operation cannot produce valid arithmetic result such as overflows,
+    // divide by zero, etc.
+    constexpr static void on_arithmetic_error(const safe_numerics_error &e,
+                                            const char *msg) {
         AE()(e, msg);
     }
+
+    // # Expression
+    // EP::on_implementation_defined_behavior(e, message)
+    //
+    // # Invoke When
+    // The result depends upon implementation defined behavior according to the
+    // C++ standard
     constexpr static void on_implementation_defined_behavior(
         const safe_numerics_error & e,
         const char * msg
     ){
         IDB()(e, msg);
     }
+
+    // # Expression
+    // EP::on_undefined_behavior(e, message)
+    // 
+    // # Invoke When
+    // The result is undefined by the C++ standard
     constexpr static void on_undefined_behavior(
         const safe_numerics_error & e,
         const char * msg
     ){
         UB()(e, msg);
     }
+
+    // # Expression
+    // EP::on_uninitialized_value(e, message)
+    //
+    // # Invoke When
+    // A variable is not initialized
     constexpr static void on_uninitialized_value(
         const safe_numerics_error & e,
         const char * msg
@@ -51,8 +100,11 @@ struct exception_policy {
 // pre-made error action handers
 
 // ignore any error and just return.
+// 用于忽略任何错误并返回。
 struct ignore_exception {
+    // 默认的构造函数采用编译器的默认实现
     constexpr ignore_exception() = default;
+    // 什么都不做
     constexpr void operator () (
         const boost::safe_numerics::safe_numerics_error &,
         const char *
@@ -60,20 +112,27 @@ struct ignore_exception {
 };
 
 // emit compile time error if this is invoked.
+// 如果调用了这个函数，就会发出编译时错误。
 struct trap_exception {
+    // 默认的构造函数采用编译器的默认实现
     constexpr trap_exception() = default;
     // error will occur on operator call.
     // hopefully this will display arguments
+    // 由于故意的缺少operaotr()的实现
+    // 以此来达到编译时错误的目的
 };
 
 // If an exceptional condition is detected at runtime throw the exception.
+// 如果在运行时检测到异常条件，则抛出异常。
 struct throw_exception {
+    // 默认构造函数采用编译器的默认实现
     constexpr throw_exception() = default;
     #ifndef BOOST_NO_EXCEPTIONS
     void operator()(
         const safe_numerics_error & e,
         const char * message
     ){
+        // 抛出异常
         throw std::system_error(std::error_code(e), message);
     }
     #else

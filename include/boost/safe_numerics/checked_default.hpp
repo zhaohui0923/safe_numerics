@@ -50,7 +50,7 @@ template<
     R Max,
     typename T,
     class F = make_checked_result<R>,
-    class Default = void
+    class Default = void    // 用于特化时使用enable_if
 >
 struct heterogeneous_checked_operation {
     constexpr static checked_result<R>
@@ -131,14 +131,15 @@ namespace checked {
 
 // implement function call interface so that types other than
 // the result type R can be deduced from the function parameters.
-
+// 
+// 将输入参数类型为T值为t进行检查并转换为结果R类型
 template<typename R, typename T>
 constexpr inline checked_result<R> cast(const T & t) /* noexcept */ {
     return heterogeneous_checked_operation<
-        R,
-        std::numeric_limits<R>::min(),
-        std::numeric_limits<R>::max(),
-        T
+        R,                              // 结果类型
+        std::numeric_limits<R>::min(),  // 结果类型的最小值
+        std::numeric_limits<R>::max(),  // 结果类型的最大值
+        T                               // 输入类型
     >::cast(t);
 }
 template<typename R>
